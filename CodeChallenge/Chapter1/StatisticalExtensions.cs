@@ -7,6 +7,13 @@ namespace CodeChallenge.Chapter1
 {
     public static class StatisticalExtensions
     {
+        /// <summary>
+        /// Returns the average after removing an indicated number of the largest and smallest values
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="values"></param>
+        /// <param name="discard"></param>
+        /// <returns></returns>
         public static double TruncatedMean<T>(this IEnumerable<T> values, int discard)
         {
             var doubles = values.Select(a => Convert.ToDouble(a))
@@ -18,18 +25,35 @@ namespace CodeChallenge.Chapter1
 
             int remaining = maxIndex - minIndex + 1;
 
+            if (remaining < 0)
+                return 0;
+
             var resultArray = new double[remaining];
 
             Array.Copy(doubles, minIndex, resultArray, 0, remaining);
 
             return resultArray.Average();
         }
+        /// <summary>
+        /// Returns the average after removing an indicated percentage of the largest and smallest values
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="values"></param>
+        /// <param name="discard"></param>
+        /// <returns></returns>
         public static double TruncatedMean<T>(this IEnumerable<T> values, double discard)
         {
             var discardInt = (int)(values.Count() * discard);
 
             return TruncatedMean(values, discardInt);
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="values"></param>
+        /// <returns></returns>
         public static double Median<T>(this IEnumerable<T> values)
         {
             var doubles = values               
@@ -58,18 +82,47 @@ namespace CodeChallenge.Chapter1
             }
         }
 
-        public static double Mode<T>(this IEnumerable<T> values)
+        public static List<T> Mode<T>(this IEnumerable<T> values)
         {
-            var doubles = values
-                .Select(a => Convert.ToDouble(a))
-                .GroupBy(a => a)
-                .Select(a => a)
+            IDictionary<T, int> valueDictionary = new Dictionary<T, int>();                
+
+            foreach(var d in values)
+            {
+                if (valueDictionary.ContainsKey(d))
+                    valueDictionary[d]++;
+                else
+                    valueDictionary.TryAdd(d, 1);
+            }
+
+            var maxValue = valueDictionary.Values.Max();
+
+            var returnValues = valueDictionary
+                .Where(a => a.Value.Equals(maxValue))
                 .ToList();                
 
-            foreach(var d in doubles)
-            {
-                
-            }
+            foreach (var v in returnValues)
+                WriteLine($"Key: {v.Key} Count: {v.Value}");
+
+            return returnValues
+                .Select(a => a.Key)
+                .ToList();
+        }
+        public static double StandardDeviation<T>(this IEnumerable<T> values, bool asSample = false)
+        {
+            var doubleValues = values.Select(a => Convert.ToDouble(a));
+
+            var doubleCount = doubleValues.Count();
+
+            var mean = doubleValues.Average();
+
+            var squaresQuery = from double value in doubleValues select (value - mean) * (value - mean);
+
+            var sumOfSquares = squaresQuery.Sum();
+
+            if (asSample)
+                return Math.Sqrt(sumOfSquares / (doubleCount - 1));
+
+            return Math.Sqrt(sumOfSquares / doubleCount);
         }
     }
 }
